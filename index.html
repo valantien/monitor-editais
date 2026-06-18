@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monitor Edictorum - &lt;foxp2_lab&gt;</title>
+<title>Projeto Monitor Edictorum</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,13 @@
   .hero::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(#ffffff0d 1px, transparent 1px), linear-gradient(90deg, #ffffff0d 1px, transparent 1px); background-size: 40px 40px; -webkit-mask-image: radial-gradient(circle at 75% 25%, #000 0%, transparent 72%); mask-image: radial-gradient(circle at 75% 25%, #000 0%, transparent 72%); }
   .hero-inner { max-width: 1280px; margin: 0 auto; position: relative; }
   .brand { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 24px; color: var(--branco); letter-spacing: -0.02em; margin-bottom: 40px; }
-  .tagchip { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 13px; background: #ffffff18; border: 1px solid #ffffff30; color: #dcdbff; padding: 8px 16px; border-radius: 8px; margin-bottom: 22px; }
+  .autoria { background: #ffffff14; border: 1px solid #ffffff30; color: #cdccf0; padding: 14px 18px; border-radius: 12px; margin-bottom: 24px; max-width: 400px; }
+  .autoria .lbl { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #b9b6ff; margin-bottom: 8px; }
+  .autoria .papel { font-size: 12px; color: #cdccf0; }
+  .autoria .nome { font-weight: 600; font-size: 15px; color: var(--branco); margin-top: 2px; }
+  .autoria .desc { font-size: 12px; color: #cdccf0; margin-top: 4px; line-height: 1.45; }
+  .autoria a { display: inline-block; margin-top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--branco); text-decoration: none; border-bottom: 1px solid #ffffff55; }
+  .autoria a:hover { border-bottom-color: var(--branco); }
   h1 { font-weight: 600; font-size: clamp(28px, 4.4vw, 48px); line-height: 1.12; letter-spacing: -0.01em; max-width: 18ch; }
   .lede { margin-top: 18px; color: #cdccf0; max-width: 560px; font-size: 15px; }
   .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; max-width: 1280px; margin: -34px auto 0; padding: 0 28px; position: relative; z-index: 2; }
@@ -83,6 +89,9 @@
 
   /* painel de estatisticas */
   .stats-side { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 18px; }
+  .credito-repo { font-size: 11px; color: var(--ink-soft); line-height: 1.5; padding: 2px 4px; }
+  .credito-repo a { color: var(--azul); text-decoration: none; font-family: 'JetBrains Mono', monospace; }
+  .credito-repo a:hover { text-decoration: underline; }
   .box { border: 1px solid var(--linha); border-radius: 14px; padding: 18px 20px; }
   .box h3 { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; color: var(--ink); margin-bottom: 16px; display: flex; align-items: center; gap: 7px; letter-spacing: -0.01em; }
   .box h3::before { content: "//"; color: var(--azul); }
@@ -145,10 +154,15 @@
 <body>
 <section class="hero">
   <div class="hero-inner">
-    <div class="brand">&lt;foxp2_lab&gt;</div>
-    <div class="tagchip">&lt;Monitor Edictorum/&gt;</div>
+    <div class="brand">&lt;Monitor Edictorum/&gt;</div>
+    <div class="autoria">
+      <div class="lbl">Projeto</div>
+      <div class="nome">Prof. Me. Krysamon D.B. Cavalcante</div>
+      <div class="desc">Doutorando em Ciências, Tecnologias e Inclusão — PGCTIn/UFF.</div>
+      <a href="http://lattes.cnpq.br/5084695314809486" target="_blank" rel="noopener">Lattes ↗</a>
+    </div>
     <h1>Monitor de editais sobre inteligência artificial, incentivo a publicações e memória no Brasil</h1>
-    <p class="lede">Coleta automática de editais e chamadas públicas, organizada por eixos temáticos e atualizada duas vezes ao dia. Escolha um eixo, refine pelas palavras-chave e filtre por semana ou pelas principais fontes.</p>
+    <p class="lede">Coleta automática de editais e chamadas públicas, organizada por eixos temáticos e atualizada a cada 24h. Escolha um eixo, refine pelas palavras-chave e filtre por semana ou pelas principais fontes.</p>
   </div>
 </section>
 
@@ -204,6 +218,10 @@
       <div class="box">
         <h3>top fontes</h3>
         <div class="fontes-list" id="top-fontes"><div class="box-vazio">sem dados</div></div>
+      </div>
+      <div class="credito-repo">
+        Adaptado do projeto original<br>
+        <a href="https://github.com/larissacodes/monitor-labiia" target="_blank" rel="noopener">larissacodes/monitor-labiia ↗</a>
       </div>
     </aside>
   </div>
