@@ -26,6 +26,18 @@ EIXOS = {
         '"chamada pública" "memória" cultural',
         '"edital" "memória" acervo',
     ],
+    "Preservação de Acervo": [
+        '"curso" "preservação de acervo"',
+        '"curso" "conservação de acervo"',
+        '"capacitação" "preservação de acervo"',
+        '"oficina" "conservação preventiva"',
+        '"formação" "preservação de acervos"',
+        # prioridade: Rio de Janeiro e online
+        '"curso" "preservação de acervo" "Rio de Janeiro"',
+        '"curso online" "preservação de acervo"',
+        '"curso" "conservação de acervo" online',
+        '"curso" "conservação de acervo" "Rio de Janeiro"',
+    ],
 }
 
 #filtros

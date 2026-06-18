@@ -239,12 +239,14 @@ const CORES_EIXO = {
   "Inteligência Artificial": "#7C3AED",
   "Incentivo a Publicações": "#2A8657",
   "Memória": "#9A6F0B",
+  "Preservação de Acervo": "#058299",
 };
 const corEixo = e => CORES_EIXO[e] || "#7C3AED";
 
-// Enquanto o usuário do GitHub não for configurado, lê o CSV local (modo de teste no computador).
-// Depois de publicar e trocar USUARIO, passa a ler direto do GitHub automaticamente.
-const CSV_URL = (USUARIO === "SEU-USUARIO-GITHUB")
+// No computador (preview local) lê o CSV local — mostra mudanças ainda não publicadas.
+// No site publicado (github.io) lê o CSV direto do GitHub.
+const ehLocal = ["localhost", "127.0.0.1"].includes(location.hostname);
+const CSV_URL = (ehLocal || USUARIO === "SEU-USUARIO-GITHUB")
   ? `${CAMINHO_CSV}?t=${Date.now()}`
   : `https://raw.githubusercontent.com/${USUARIO}/${REPO}/${BRANCH}/${CAMINHO_CSV}?t=${Date.now()}`;
 document.getElementById("link-csv").href = CSV_URL;
