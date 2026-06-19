@@ -21,6 +21,9 @@
   .hero::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(#ffffff0d 1px, transparent 1px), linear-gradient(90deg, #ffffff0d 1px, transparent 1px); background-size: 40px 40px; -webkit-mask-image: radial-gradient(circle at 75% 25%, #000 0%, transparent 72%); mask-image: radial-gradient(circle at 75% 25%, #000 0%, transparent 72%); }
   .hero-inner { max-width: 1280px; margin: 0 auto; position: relative; }
   .brand { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 24px; color: var(--branco); letter-spacing: -0.02em; margin-bottom: 40px; }
+  .hero-row { display: flex; gap: 40px; align-items: flex-start; justify-content: space-between; }
+  .hero-texto { flex: 1; min-width: 0; }
+  @media (max-width: 820px) { .hero-row { flex-direction: column; gap: 24px; } }
   .autoria { background: #ffffff14; border: 1px solid #ffffff30; color: #cdccf0; padding: 14px 18px; border-radius: 12px; margin-bottom: 24px; max-width: 400px; }
   .autoria .lbl { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #b9b6ff; margin-bottom: 8px; }
   .autoria .papel { font-size: 12px; color: #cdccf0; }
@@ -154,15 +157,19 @@
 <body>
 <section class="hero">
   <div class="hero-inner">
-    <div class="brand">&lt;Monitor Edictorum/&gt;</div>
-    <div class="autoria">
-      <div class="lbl">Projeto</div>
-      <div class="nome">Prof. Me. Krysamon D.B. Cavalcante</div>
-      <div class="desc">Doutorando em Ciências, Tecnologias e Inclusão — PGCTIn/UFF.</div>
-      <a href="http://lattes.cnpq.br/5084695314809486" target="_blank" rel="noopener">Lattes ↗</a>
+    <div class="brand">&lt;Projeto Monitor Edictorum/&gt;</div>
+    <div class="hero-row">
+      <div class="hero-texto">
+        <h1>Monitor de editais sobre inteligência artificial, incentivo a publicações e memória no Brasil</h1>
+        <p class="lede">Coleta automática de editais e chamadas públicas, organizada por eixos temáticos e atualizada a cada 24h. Escolha um eixo, refine pelas palavras-chave e filtre por semana ou pelas principais fontes.</p>
+      </div>
+      <div class="autoria">
+        <div class="lbl">Projeto</div>
+        <div class="nome">Prof. Me. Krysamon D.B. Cavalcante</div>
+        <div class="desc">Doutorando em Ciências, Tecnologias e Inclusão — PGCTIn/UFF.</div>
+        <a href="http://lattes.cnpq.br/5084695314809486" target="_blank" rel="noopener">Lattes ↗</a>
+      </div>
     </div>
-    <h1>Monitor de editais sobre inteligência artificial, incentivo a publicações e memória no Brasil</h1>
-    <p class="lede">Coleta automática de editais e chamadas públicas, organizada por eixos temáticos e atualizada a cada 24h. Escolha um eixo, refine pelas palavras-chave e filtre por semana ou pelas principais fontes.</p>
   </div>
 </section>
 
@@ -221,7 +228,7 @@
       </div>
       <div class="credito-repo">
         Adaptado do projeto original<br>
-        <a href="https://github.com/larissacodes/monitor-labiia" target="_blank" rel="noopener">larissacodes/monitor-labiia ↗</a>
+        <a href="https://github.com/larissacodes/monitor-labiia" target="_blank" rel="noopener">monitor-labiia ↗</a>
       </div>
     </aside>
   </div>
@@ -239,7 +246,6 @@ const CORES_EIXO = {
   "Inteligência Artificial": "#7C3AED",
   "Incentivo a Publicações": "#2A8657",
   "Memória": "#9A6F0B",
-  "Preservação de Acervo": "#058299",
 };
 const corEixo = e => CORES_EIXO[e] || "#7C3AED";
 
@@ -258,6 +264,45 @@ let filtroSemana = null;   // timestamp do inicio da semana selecionada, ou null
 let filtroFonteClick = null; // nome da fonte selecionada via clique, ou null
 const limpa = s => (s||"").replace(/"/g,'');
 const normKw = s => (s||"").replace(/"/g,'').trim().toLowerCase();
+
+// Subgrupos: palavras-chave dentro de um eixo que recebem nome e cor próprios no site.
+const SUBGRUPOS = [
+  { eixo: "Memória", nome: "Curso de Preservação de Acervo", cor: "#058299",
+    keywords: [
+      "curso preservação de acervo", "curso conservação de acervo",
+      "capacitação preservação de acervo", "oficina conservação preventiva",
+      "formação preservação de acervos", "curso preservação de acervo rio de janeiro",
+      "curso online preservação de acervo", "curso conservação de acervo online",
+      "curso conservação de acervo rio de janeiro",
+    ] },
+];
+function subgrupoDe(eixo, keyword){ const n=normKw(keyword); return SUBGRUPOS.find(s=>s.eixo===eixo && s.keywords.includes(n)) || null; }
+function corItem(d){ const s=subgrupoDe(d.eixo, d.keyword); return s ? s.cor : corEixo(d.eixo); }
+function rotuloItem(d){ const s=subgrupoDe(d.eixo, d.keyword); return s ? s.nome : (d.eixo||""); }
+function corKeyword(eixo, kw){ const s=subgrupoDe(eixo, kw); return s ? s.cor : corEixo(eixo); }
+
+// Fusão de chips: várias palavras-chave mostradas como um único chip rotulado (só exibição).
+const KW_FUSAO = [
+  { eixo: "Memória", rotulo: "curso conservação/preservação de acervo",
+    keywords: ["curso conservação de acervo", "curso preservação de acervo"] },
+];
+// monta os chips de um eixo: funde os definidos em KW_FUSAO, mantém o resto individual
+function chipsDoEixo(eixo, kws){
+  const usados = new Set();
+  const chips = [];
+  for(const f of KW_FUSAO.filter(x=>x.eixo===eixo)){
+    const presentes = kws.filter(k=>f.keywords.includes(normKw(k)));
+    if(presentes.length){
+      presentes.forEach(k=>usados.add(k));
+      chips.push({ rotulo: f.rotulo, kws: presentes.map(normKw), cor: corKeyword(eixo, presentes[0]) });
+    }
+  }
+  for(const k of kws){
+    if(usados.has(k)) continue;
+    chips.push({ rotulo: limpa(k), kws: [normKw(k)], cor: corKeyword(eixo, k) });
+  }
+  return chips.sort((a,b)=>a.rotulo.localeCompare(b.rotulo));
+}
 
 function parseData(s){ if(!s) return null; const d=new Date(s); return isNaN(d)?null:d; }
 function fmtData(s){ const d=parseData(s); if(!d) return s||"sem data"; return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"short",year:"numeric"}); }
@@ -306,12 +351,12 @@ function render(){
   if(filtrados.length===0){ lista.innerHTML=`<div class="state"><div class="big">Nada encontrado</div>Marque mais palavras-chave ou limpe a busca.</div>`; }
   else {
     lista.innerHTML=`<div class="cards">${filtrados.map(d=>{
-      const c=corEixo(d.eixo);
+      const c=corItem(d);
       return `<div class="card" style="--cor:${c}">
         <div class="barra"></div>
         <a class="title" href="${d.link}" target="_blank" rel="noopener">${d.titulo||"(sem título)"}</a>
         <div class="src"><span class="fonte">${d.fonte||"fonte desconhecida"}</span><span class="dot"></span><span>${fmtData(d.data_pub)}</span></div>
-        <div class="tags"><span class="tag-eixo" style="background:${c}">${d.eixo||""}</span><span class="tag-kw">${limpa(d.keyword)}</span></div>
+        <div class="tags"><span class="tag-eixo" style="background:${c}">${rotuloItem(d)}</span><span class="tag-kw">${limpa(d.keyword)}</span></div>
       </div>`;
     }).join("")}</div>`;
   }
@@ -450,12 +495,13 @@ function abrirEixo(eixo){
   document.querySelector("#kw-titulo .bola").style.background=c;
 
   const cont=document.getElementById("kw-chips");
-  cont.innerHTML=kws.map(k=>`<span class="kwchip on" data-kw="${normKw(k)}" style="--cor:${c}">${limpa(k)}</span>`).join("");
+  const chips=chipsDoEixo(eixo, kws);
+  cont.innerHTML=chips.map(ch=>`<span class="kwchip on" data-kws="${ch.kws.join('~~')}" style="--cor:${ch.cor}">${ch.rotulo}</span>`).join("");
   cont.querySelectorAll(".kwchip").forEach(chip=>{
     chip.addEventListener("click",()=>{
-      const k=chip.dataset.kw;
-      if(kwAtivas.has(k)){ kwAtivas.delete(k); chip.classList.remove("on"); }
-      else { kwAtivas.add(k); chip.classList.add("on"); }
+      const ks=chip.dataset.kws.split('~~');
+      if(chip.classList.contains("on")){ ks.forEach(k=>kwAtivas.delete(k)); chip.classList.remove("on"); }
+      else { ks.forEach(k=>kwAtivas.add(k)); chip.classList.add("on"); }
       render();
     });
   });
@@ -474,11 +520,11 @@ function montarEixos(eixos){
 }
 
 document.getElementById("kw-todas").addEventListener("click",()=>{
-  document.querySelectorAll(".kwchip").forEach(ch=>{ kwAtivas.add(ch.dataset.kw); ch.classList.add("on"); });
+  document.querySelectorAll(".kwchip").forEach(ch=>{ ch.dataset.kws.split('~~').forEach(k=>kwAtivas.add(k)); ch.classList.add("on"); });
   render();
 });
 document.getElementById("kw-nenhuma").addEventListener("click",()=>{
-  document.querySelectorAll(".kwchip").forEach(ch=>{ kwAtivas.delete(ch.dataset.kw); ch.classList.remove("on"); });
+  document.querySelectorAll(".kwchip").forEach(ch=>{ ch.dataset.kws.split('~~').forEach(k=>kwAtivas.delete(k)); ch.classList.remove("on"); });
   render();
 });
 
