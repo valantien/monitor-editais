@@ -89,6 +89,8 @@
   .card .tags { grid-column: 3; grid-row: 1 / span 3; align-self: start; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
   .tag-eixo { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 99px; color: var(--branco); white-space: nowrap; }
   .tag-kw { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 99px; background: var(--claro); color: var(--ink-soft); white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+  .tag-agencia { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 99px; background: #e0f2fe; color: #0369a1; white-space: nowrap; font-weight: 600; }
+  .tag-tipo { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 4px 10px; border-radius: 99px; background: #fef3c7; color: #b45309; white-space: nowrap; font-weight: 600; }
 
   /* painel de estatisticas */
   .stats-side { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 18px; }
@@ -223,6 +225,10 @@
         <div class="rank" id="rank-eixos"><div class="box-vazio">sem dados</div></div>
       </div>
       <div class="box">
+        <h3>agências de fomento</h3>
+        <div class="rank" id="rank-agencias"><div class="box-vazio">sem dados</div></div>
+      </div>
+      <div class="box">
         <h3>top fontes</h3>
         <div class="fontes-list" id="top-fontes"><div class="box-vazio">sem dados</div></div>
       </div>
@@ -326,6 +332,7 @@ function filtrar(){
     if(q && !(d.titulo||"").toLowerCase().includes(q)) return false;
     if(ffonte && d.fonte!==ffonte) return false;
     if(filtroFonteClick && d.fonte!==filtroFonteClick) return false;
+    if(filtroAgenciaClick && d.agencia!==filtroAgenciaClick) return false;
     if(filtroSemana){
       const dt=parseData(d.data_pub);
       if(!dt || inicioSemana(dt).getTime()!==filtroSemana) return false;
@@ -352,11 +359,18 @@ function render(){
   else {
     lista.innerHTML=`<div class="cards">${filtrados.map(d=>{
       const c=corItem(d);
+      let extras = "";
+      if(d.agencia) extras += `<span class="tag-agencia">${d.agencia}</span>`;
+      if(d.tipo_edital) extras += `<span class="tag-tipo">${d.tipo_edital}</span>`;
       return `<div class="card" style="--cor:${c}">
         <div class="barra"></div>
         <a class="title" href="${d.link}" target="_blank" rel="noopener">${d.titulo||"(sem título)"}</a>
         <div class="src"><span class="fonte">${d.fonte||"fonte desconhecida"}</span><span class="dot"></span><span>${fmtData(d.data_pub)}</span></div>
-        <div class="tags"><span class="tag-eixo" style="background:${c}">${rotuloItem(d)}</span><span class="tag-kw">${limpa(d.keyword)}</span></div>
+        <div class="tags">
+          <span class="tag-eixo" style="background:${c}">${rotuloItem(d)}</span>
+          ${extras}
+          <span class="tag-kw">${limpa(d.keyword)}</span>
+        </div>
       </div>`;
     }).join("")}</div>`;
   }
@@ -371,12 +385,14 @@ function desenharFiltrosAtivos(){
   let html="";
   if(filtroSemana){ html+=`<span class="fa-pill" data-tipo="semana">semana ${rotuloSemanaCompleto(filtroSemana)} <span class="x">×</span></span>`; }
   if(filtroFonteClick){ html+=`<span class="fa-pill" data-tipo="fonte">${filtroFonteClick} <span class="x">×</span></span>`; }
+  if(filtroAgenciaClick){ html+=`<span class="fa-pill" data-tipo="agencia">${filtroAgenciaClick} <span class="x">×</span></span>`; }
   pills.innerHTML=html;
-  faixa.classList.toggle("ativo", !!(filtroSemana||filtroFonteClick));
+  faixa.classList.toggle("ativo", !!(filtroSemana||filtroFonteClick||filtroAgenciaClick));
   pills.querySelectorAll(".fa-pill").forEach(p=>{
     p.addEventListener("click",()=>{
       if(p.dataset.tipo==="semana") filtroSemana=null;
       if(p.dataset.tipo==="fonte") filtroFonteClick=null;
+      if(p.dataset.tipo==="agencia") filtroAgenciaClick=null;
       render();
     });
   });
@@ -386,6 +402,7 @@ function atualizarEstatisticas(visiveis){
   desenharFiltrosAtivos();
   desenharSemanas(visiveis);
   desenharRankEixos();
+  desenharRankAgencias(visiveis);
   desenharTopFontes(visiveis);
 }
 
@@ -455,6 +472,37 @@ function desenharRankEixos(){
   }).join("");
 }
 
+// 2.1) ranking de agencias
+let filtroAgenciaClick = null;
+function desenharRankAgencias(visiveis){
+  const cont=document.getElementById("rank-agencias");
+  const base=dados.filter(d=>{
+    if(d.eixo!==eixoAtivo) return false;
+    if(filtroFonteClick && d.fonte!==filtroFonteClick) return false;
+    if(filtroSemana){ const dt=parseData(d.data_pub); if(!dt || inicioSemana(dt).getTime()!==filtroSemana) return false; }
+    return true;
+  });
+  
+  const cont_ag={};
+  base.forEach(d=>{ if(d.agencia) cont_ag[d.agencia]=(cont_ag[d.agencia]||0)+1; });
+  const itens=Object.entries(cont_ag).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  
+  if(itens.length===0){ cont.innerHTML=`<div class="box-vazio">sem dados mapeados</div>`; return; }
+  const max=Math.max(...itens.map(i=>i[1]),1);
+  cont.innerHTML=itens.map(([ag, qtd])=>{
+    const w=Math.round((qtd/max)*100);
+    const sel=(filtroAgenciaClick===ag)?" style='font-weight:bold;color:var(--azul)'":"";
+    return `<div class="rank-item" style="cursor:pointer" onclick="clickAgencia('${ag}')">
+      <div class="rank-top">
+        <span class="rank-nome"${sel}>${ag}</span>
+        <span class="rank-qtd">${qtd}</span>
+      </div>
+      <div class="rank-bar"><div class="rank-fill" style="width:${w}%;background:#0369a1"></div></div>
+    </div>`;
+  }).join("");
+}
+function clickAgencia(ag){ filtroAgenciaClick=(filtroAgenciaClick===ag)?null:ag; render(); }
+
 // 3) top fontes (do recorte filtrado, ou geral se nada filtrado)
 function desenharTopFontes(visiveis){
   const cont=document.getElementById("top-fontes");
@@ -482,7 +530,7 @@ function kwsDoEixo(eixo){
 
 function abrirEixo(eixo){
   eixoAtivo=eixo;
-  filtroSemana=null; filtroFonteClick=null;
+  filtroSemana=null; filtroFonteClick=null; filtroAgenciaClick=null;
   document.querySelectorAll(".eixo-chip").forEach(ch=>ch.classList.toggle("on", ch.dataset.eixo===eixo));
   const c=corEixo(eixo);
   const kws=kwsDoEixo(eixo);
@@ -551,7 +599,7 @@ Papa.parse(CSV_URL,{ download:true, header:true, skipEmptyLines:true,
   error:()=>{ document.getElementById("lista").innerHTML=`<div class="state"><div class="big">Não consegui carregar o CSV</div>Verifique se o repositório é público e o caminho dados/noticias.csv.</div>`; }
 });
 document.getElementById("fa-limpar").addEventListener("click",()=>{
-  filtroSemana=null; filtroFonteClick=null; render();
+  filtroSemana=null; filtroFonteClick=null; filtroAgenciaClick=null; render();
 });
 ["q","filtro-fonte"].forEach(id=>document.getElementById(id).addEventListener("input",render));
 </script>

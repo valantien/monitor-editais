@@ -94,21 +94,66 @@ for eixo, keywords in EIXOS.items():
                 descartadas_antigas += 1
                 continue
 
+            titulo = e.title or ""
+            titulo_lower = titulo.lower()
+
+            # Classificador de Agência
+            agencia = ""
+            if re.search(r'\b(cnpq)\b', titulo_lower): agencia = "CNPq"
+            elif re.search(r'\b(capes)\b', titulo_lower): agencia = "CAPES"
+            elif re.search(r'\b(fapesp|faperj|fapemig|fapergs|fap|fapeal|fapeam|fapeg|fapema|fapemat|fapes|fapesb|fapesc|fapespa|fapesq|fapi|fapt|funcap)\b', titulo_lower): agencia = "FAP (Estaduais)"
+            elif re.search(r'\b(finep)\b', titulo_lower): agencia = "Finep"
+            elif re.search(r'\b(bndes)\b', titulo_lower): agencia = "BNDES"
+            elif re.search(r'\b(minc|cultura|funarte|lei paulo gustavo|lei aldir blanc)\b', titulo_lower): agencia = "Cultura / MinC"
+            elif re.search(r'\b(mcti)\b', titulo_lower): agencia = "MCTI"
+
+            # Classificador de Tipo
+            tipo = ""
+            if re.search(r'\b(bolsa|bolsas)\b', titulo_lower): tipo = "Bolsa"
+            elif re.search(r'\b(prêmio|premio)\b', titulo_lower): tipo = "Prêmio"
+            elif re.search(r'\b(curso|cursos|capacitação|oficina|treinamento)\b', titulo_lower): tipo = "Curso"
+            elif re.search(r'\b(fomento|financiamento|subvenção|patrocínio)\b', titulo_lower): tipo = "Financiamento"
+
             linhas.append({
                 "eixo": eixo,
                 "keyword": kw,
-                "titulo": e.title,
+                "titulo": titulo,
                 "data_pub": data_pub,
                 "fonte": fonte,
                 "link": link,
+                "agencia": agencia,
+                "tipo_edital": tipo,
                 "coletado_em": datetime.now(timezone.utc).isoformat(),
             })
 
 novo = pd.DataFrame(linhas)
 
+def classificar_agencia(titulo):
+    t = str(titulo).lower()
+    if re.search(r'\b(cnpq)\b', t): return "CNPq"
+    if re.search(r'\b(capes)\b', t): return "CAPES"
+    if re.search(r'\b(fapesp|faperj|fapemig|fapergs|fap|fapeal|fapeam|fapeg|fapema|fapemat|fapes|fapesb|fapesc|fapespa|fapesq|fapi|fapt|funcap)\b', t): return "FAP (Estaduais)"
+    if re.search(r'\b(finep)\b', t): return "Finep"
+    if re.search(r'\b(bndes)\b', t): return "BNDES"
+    if re.search(r'\b(minc|cultura|funarte|lei paulo gustavo|lei aldir blanc)\b', t): return "Cultura / MinC"
+    if re.search(r'\b(mcti)\b', t): return "MCTI"
+    return ""
+
+def classificar_tipo(titulo):
+    t = str(titulo).lower()
+    if re.search(r'\b(bolsa|bolsas)\b', t): return "Bolsa"
+    if re.search(r'\b(prêmio|premio)\b', t): return "Prêmio"
+    if re.search(r'\b(curso|cursos|capacitação|oficina|treinamento)\b', t): return "Curso"
+    if re.search(r'\b(fomento|financiamento|subvenção|patrocínio)\b', t): return "Financiamento"
+    return ""
+
 if os.path.exists(arquivo):
     antigo = pd.read_csv(arquivo)
     df = pd.concat([antigo, novo]).drop_duplicates(subset="link", keep="first")
+    
+    # Reclassificar tudo retroativamente
+    df["agencia"] = df["titulo"].apply(classificar_agencia)
+    df["tipo_edital"] = df["titulo"].apply(classificar_tipo)
 
     if "data_pub" in df.columns:
         df = df[~df["data_pub"].apply(esta_expirado)]
