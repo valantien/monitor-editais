@@ -127,6 +127,22 @@
 
   .box-vazio { font-size: 12px; color: var(--ink-soft); }
 
+  /* cruzamento (mapa de calor) */
+  .cruz { margin-top: 28px; }
+  .heat-controls { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .heat-controls label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-soft); display: flex; flex-direction: column; gap: 5px; }
+  .heat-controls select { min-width: 150px; padding: 8px 12px; font-size: 13px; }
+  .heat-controls .heat-x { font-family: 'JetBrains Mono', monospace; font-size: 16px; color: var(--azul); padding-bottom: 9px; }
+  .heat-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .heat { display: grid; gap: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .heat-cell { padding: 9px 4px; text-align: center; border-radius: 5px; color: var(--ink); transition: box-shadow .15s; }
+  .heat-cell.clk { cursor: pointer; }
+  .heat-cell.clk:hover { box-shadow: 0 0 0 2px var(--azul) inset; }
+  .heat-cell.sel { box-shadow: 0 0 0 2px var(--ink) inset; font-weight: 700; }
+  .heat-head { color: var(--ink-soft); font-weight: 700; padding: 6px 4px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .heat-row-head { color: var(--ink-soft); font-weight: 700; padding: 9px 8px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .heat-nota { font-size: 11px; color: var(--ink-soft); margin-top: 12px; }
+
   /* elementos clicaveis no painel */
   .barra-col { cursor: pointer; }
   .barra-col .barra-val { transition: height .3s, opacity .15s; }
@@ -240,6 +256,29 @@
     </aside>
   </div>
 
+  <div class="box cruz">
+    <h3>cruzamento</h3>
+    <div class="heat-controls">
+      <label>linhas
+        <select id="heat-dim1">
+          <option value="agencia" selected>Agência</option>
+          <option value="tipo">Tipo</option>
+          <option value="eixo">Eixo</option>
+        </select>
+      </label>
+      <span class="heat-x">×</span>
+      <label>colunas
+        <select id="heat-dim2">
+          <option value="agencia">Agência</option>
+          <option value="tipo">Tipo</option>
+          <option value="eixo" selected>Eixo</option>
+        </select>
+      </label>
+    </div>
+    <div id="graf-heat"><div class="box-vazio">sem dados</div></div>
+    <div class="heat-nota" id="heat-nota"></div>
+  </div>
+
   <footer>
     <div>dados via Google News RSS · atualização automática por GitHub Actions · <a href="#" id="link-csv">ver CSV bruto</a></div>
     <div class="footer-credito">Adaptado de <a href="https://github.com/labiia-lab/monitor-labiia" target="_blank" rel="noopener">Monitor de Notícias - IA e Eleições</a>, de Larissa Diniz Aguiar (<a href="https://github.com/labiia-lab" target="_blank" rel="noopener">LABIIA</a>), licenciado sob <a href="https://creativecommons.org/licenses/by-nc/4.0/deed.pt_BR" target="_blank" rel="noopener">CC BY-NC 4.0</a>. Foram feitas alterações: novo tema (editais), eixos, filtros, classificação de agência e tipo, e identidade visual.</div>
@@ -337,6 +376,7 @@ function filtrar(){
     if(ffonte && d.fonte!==ffonte) return false;
     if(filtroFonteClick && d.fonte!==filtroFonteClick) return false;
     if(filtroAgenciaClick && d.agencia!==filtroAgenciaClick) return false;
+    if(filtroTipoClick && d.tipo_edital!==filtroTipoClick) return false;
     if(filtroSemana){
       const dt=parseData(d.data_pub);
       if(!dt || inicioSemana(dt).getTime()!==filtroSemana) return false;
@@ -390,13 +430,15 @@ function desenharFiltrosAtivos(){
   if(filtroSemana){ html+=`<span class="fa-pill" data-tipo="semana">semana ${rotuloSemanaCompleto(filtroSemana)} <span class="x">×</span></span>`; }
   if(filtroFonteClick){ html+=`<span class="fa-pill" data-tipo="fonte">${filtroFonteClick} <span class="x">×</span></span>`; }
   if(filtroAgenciaClick){ html+=`<span class="fa-pill" data-tipo="agencia">${filtroAgenciaClick} <span class="x">×</span></span>`; }
+  if(filtroTipoClick){ html+=`<span class="fa-pill" data-tipo="tipo">${filtroTipoClick} <span class="x">×</span></span>`; }
   pills.innerHTML=html;
-  faixa.classList.toggle("ativo", !!(filtroSemana||filtroFonteClick||filtroAgenciaClick));
+  faixa.classList.toggle("ativo", !!(filtroSemana||filtroFonteClick||filtroAgenciaClick||filtroTipoClick));
   pills.querySelectorAll(".fa-pill").forEach(p=>{
     p.addEventListener("click",()=>{
       if(p.dataset.tipo==="semana") filtroSemana=null;
       if(p.dataset.tipo==="fonte") filtroFonteClick=null;
       if(p.dataset.tipo==="agencia") filtroAgenciaClick=null;
+      if(p.dataset.tipo==="tipo") filtroTipoClick=null;
       render();
     });
   });
@@ -407,6 +449,7 @@ function atualizarEstatisticas(visiveis){
   desenharSemanas(visiveis);
   desenharRankEixos();
   desenharRankAgencias(visiveis);
+  desenharHeat();
   desenharTopFontes(visiveis);
 }
 
@@ -478,6 +521,7 @@ function desenharRankEixos(){
 
 // 2.1) ranking de agencias
 let filtroAgenciaClick = null;
+let filtroTipoClick = null;
 function desenharRankAgencias(visiveis){
   const cont=document.getElementById("rank-agencias");
   const base=dados.filter(d=>{
@@ -507,6 +551,81 @@ function desenharRankAgencias(visiveis){
 }
 function clickAgencia(ag){ filtroAgenciaClick=(filtroAgenciaClick===ag)?null:ag; render(); }
 
+
+// 4) cruzamento: mapa de calor entre duas dimensões (Agência, Tipo, Eixo).
+// Conta só itens que têm as duas dimensões preenchidas. Respeita busca, fonte e semana,
+// mas ignora o eixo ativo e os filtros de agência/tipo (senão o mapa encolheria ao clicar).
+const DIMS_HEAT = {
+  agencia: { nome:"Agência", valor:d=>d.agencia },
+  tipo:    { nome:"Tipo",    valor:d=>d.tipo_edital },
+  eixo:    { nome:"Eixo",    valor:d=>d.eixo },
+};
+function baseHeat(){
+  const q=document.getElementById("q").value.toLowerCase().trim();
+  const ffonte=document.getElementById("filtro-fonte").value;
+  return dados.filter(d=>{
+    if(q && !(d.titulo||"").toLowerCase().includes(q)) return false;
+    if(ffonte && d.fonte!==ffonte) return false;
+    if(filtroFonteClick && d.fonte!==filtroFonteClick) return false;
+    if(filtroSemana){ const dt=parseData(d.data_pub); if(!dt || inicioSemana(dt).getTime()!==filtroSemana) return false; }
+    return true;
+  });
+}
+function celulaSelecionada(dim,val){
+  if(dim==="eixo") return eixoAtivo===val;
+  if(dim==="agencia") return filtroAgenciaClick===val;
+  return filtroTipoClick===val;
+}
+function aplicarDim(dim,val){
+  if(dim==="eixo"){ if(eixoAtivo!==val) abrirEixo(val); }
+  else if(dim==="agencia") filtroAgenciaClick=val;
+  else filtroTipoClick=val;
+}
+function limparDim(dim){
+  if(dim==="agencia") filtroAgenciaClick=null;
+  if(dim==="tipo") filtroTipoClick=null;
+}
+function desenharHeat(){
+  const cont=document.getElementById("graf-heat");
+  const nota=document.getElementById("heat-nota");
+  const d1=document.getElementById("heat-dim1").value, d2=document.getElementById("heat-dim2").value;
+  if(d1===d2){ cont.innerHTML=`<div class="box-vazio">escolha duas dimensões diferentes</div>`; nota.textContent=""; return; }
+  const v1=DIMS_HEAT[d1].valor, v2=DIMS_HEAT[d2].valor;
+  const base=baseHeat().filter(d=>v1(d) && v2(d));
+  if(!base.length){ cont.innerHTML=`<div class="box-vazio">sem itens com as duas dimensões identificadas</div>`; nota.textContent=""; return; }
+  const N = window.matchMedia("(max-width: 600px)").matches ? 5 : 8;
+  const top=(f)=>{ const c={}; base.forEach(d=>{ const k=f(d); c[k]=(c[k]||0)+1; });
+    return Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,N).map(e=>e[0]); };
+  const linhas=top(v1), colunas=top(v2);
+  const mat={}; let max=0;
+  linhas.forEach(l=>{ mat[l]={}; colunas.forEach(c=>{ mat[l][c]=0; }); });
+  base.forEach(d=>{ const l=v1(d), c=v2(d); if(mat[l] && mat[l][c]!==undefined){ mat[l][c]++; max=Math.max(max,mat[l][c]); } });
+  const esc=s=>String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+  const cols=`150px repeat(${colunas.length}, minmax(70px, 1fr))`;
+  let html=`<div class="heat-scroll"><div class="heat" style="grid-template-columns:${cols}"><div></div>`;
+  html+=colunas.map(c=>`<div class="heat-head" title="${esc(c)}">${esc(c)}</div>`).join("");
+  linhas.forEach(l=>{
+    html+=`<div class="heat-row-head" title="${esc(l)}">${esc(l)}</div>`;
+    colunas.forEach(c=>{
+      const v=mat[l][c], inten=max? v/max : 0;
+      const bg=v? `rgba(124,58,237,${(0.12+inten*0.78).toFixed(2)})` : "var(--claro)";
+      const cor=inten>0.55? "#fff" : "var(--ink)";
+      const sel=(celulaSelecionada(d1,l) && celulaSelecionada(d2,c)) ? " sel" : "";
+      html+=`<div class="heat-cell${v?" clk":""}${sel}" data-l="${esc(l)}" data-c="${esc(c)}" style="background:${bg};color:${cor}" title="${esc(l)} × ${esc(c)}: ${v} item(ns)${v?" — clique para filtrar":""}">${v||""}</div>`;
+    });
+  });
+  cont.innerHTML=html+`</div></div>`;
+  nota.textContent=`${base.length} de ${dados.length} itens têm as duas dimensões identificadas (a agência e o tipo vêm do título e nem sempre são reconhecidos).`;
+  cont.querySelectorAll(".heat-cell.clk").forEach(cell=>{
+    cell.addEventListener("click",()=>{
+      const l=cell.dataset.l, c=cell.dataset.c;
+      if(celulaSelecionada(d1,l) && celulaSelecionada(d2,c)){ limparDim(d1); limparDim(d2); }
+      else { aplicarDim(d1,l); aplicarDim(d2,c); }
+      render();
+    });
+  });
+}
+
 // 3) top fontes (do recorte filtrado, ou geral se nada filtrado)
 function desenharTopFontes(visiveis){
   const cont=document.getElementById("top-fontes");
@@ -534,7 +653,7 @@ function kwsDoEixo(eixo){
 
 function abrirEixo(eixo){
   eixoAtivo=eixo;
-  filtroSemana=null; filtroFonteClick=null; filtroAgenciaClick=null;
+  filtroSemana=null; filtroFonteClick=null; filtroAgenciaClick=null; filtroTipoClick=null;
   document.querySelectorAll(".eixo-chip").forEach(ch=>ch.classList.toggle("on", ch.dataset.eixo===eixo));
   const c=corEixo(eixo);
   const kws=kwsDoEixo(eixo);
@@ -603,9 +722,12 @@ Papa.parse(CSV_URL,{ download:true, header:true, skipEmptyLines:true,
   error:()=>{ document.getElementById("lista").innerHTML=`<div class="state"><div class="big">Não consegui carregar o CSV</div>Verifique se o repositório é público e o caminho dados/noticias.csv.</div>`; }
 });
 document.getElementById("fa-limpar").addEventListener("click",()=>{
-  filtroSemana=null; filtroFonteClick=null; filtroAgenciaClick=null; render();
+  filtroSemana=null; filtroFonteClick=null; filtroAgenciaClick=null; filtroTipoClick=null; render();
 });
 ["q","filtro-fonte"].forEach(id=>document.getElementById(id).addEventListener("input",render));
+["heat-dim1","heat-dim2"].forEach(id=>document.getElementById(id).addEventListener("change",render));
+let resizeTimer;
+window.addEventListener("resize",()=>{ clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>{ if(dados.length) render(); },200); });
 </script>
 </body>
 </html>
