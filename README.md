@@ -10,7 +10,7 @@ Monitor automático de **editais e chamadas públicas** no Brasil, organizado po
 
 ## Como funciona
 
-- `coletar.py` busca o Google News RSS para cada palavra-chave dos eixos, filtra (ano mínimo e fontes portuguesas) e salva em `dados/noticias.csv`.
+- `coletar.py` busca o Google News RSS para cada palavra-chave dos eixos, filtra (descarta itens com mais de 6 meses e fontes portuguesas), classifica Agência e Tipo pelo título e salva em `dados/noticias.csv`.
 - `.github/workflows/monitor.yml` roda uma vez por dia via GitHub Actions e faz commit do CSV atualizado.
 - `index.html` (GitHub Pages) lê o CSV com PapaParse e renderiza a interface.
 
@@ -24,4 +24,4 @@ Como foi publicado (passos para reproduzir num outro fork):
 2. ✅ Repositório subido como **público** com o nome `monitor-editais`.
 3. ✅ **GitHub Pages** ativado (branch `main`, raiz `/`).
 
-Adaptado de [larissacodes/monitor-labiia](https://github.com/larissacodes/monitor-labiia).
+Adaptado de [labiia-lab/monitor-labiia](https://github.com/labiia-lab/monitor-labiia).
