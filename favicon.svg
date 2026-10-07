@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <!-- fundo azul institucional -->
-  <rect width="64" height="64" rx="14" fill="#4945FE"/>
-  <!-- circulo branco com borda -->
-  <circle cx="32" cy="32" r="20" fill="none" stroke="#FFFFFF" stroke-width="3.5"/>
-  <!-- simbolo <l> em branco, vetorial -->
-  <g fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-    <polyline points="24,27 19,32 24,37"/>
-    <polyline points="40,27 45,32 40,37"/>
-    <path d="M31 25 L31 35 Q31 37.5 33.5 37.5 L35 37.5"/>
+  <!-- fundo violeta do Monitor Edictorum -->
+  <rect width="64" height="64" rx="14" fill="#7C3AED"/>
+  <!-- marca <ME/> em branco, vetorial (sem fonte) -->
+  <g fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="14,25 9,32 14,39"/>
+    <path d="M18 42 L18 22 L24 32 L30 22 L30 42"/>
+    <path d="M42 22 L34 22 L34 42 L42 42 M34 32 L40 32"/>
+    <path d="M45 43 L49 21"/>
+    <polyline points="51,25 56,32 51,39"/>
   </g>
 </svg>
