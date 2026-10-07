@@ -7,6 +7,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: "monitor-coletor"
+  cancel-in-progress: false
+
 jobs:
   coletar:
     runs-on: ubuntu-latest
