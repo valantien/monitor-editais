@@ -11,7 +11,7 @@ Monitor automático de **editais e chamadas públicas** no Brasil, organizado po
 ## Como funciona
 
 - `coletar.py` busca o Google News RSS para cada palavra-chave dos eixos, filtra (descarta itens com mais de 6 meses e fontes portuguesas), classifica Agência e Tipo pelo título e salva em `dados/noticias.csv`.
-- `.github/workflows/monitor.yml` roda uma vez por dia via GitHub Actions e faz commit do CSV atualizado.
+- `.github/workflows/monitor.yml` roda a coleta sob demanda (disparo manual na aba Actions) e faz commit do CSV atualizado. O agendamento diário está desligado desde 06/10/2026 (site congelado).
 - `index.html` (GitHub Pages) lê o CSV com PapaParse e renderiza a interface.
 
 ## Deploy (já publicado)
@@ -34,7 +34,7 @@ Este monitor segue os mesmos termos: **uso não comercial**.
 
 **Alterações feitas no Monitor Edictorum:** novo tema (editais e chamadas públicas, em vez de IA nas eleições),
 três eixos próprios (Inteligência Artificial, Incentivo a Publicações, Memória), subgrupo e chip fundido,
-classificação por Agência e Tipo, validade de 6 meses, coleta uma vez por dia e nova identidade visual.
+classificação por Agência e Tipo, validade de 6 meses, coleta sob demanda e nova identidade visual.
 
 **Como citar o original**
 

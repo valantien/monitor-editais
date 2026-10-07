@@ -1,8 +1,10 @@
 name: Monitor de editais
 on:
-  schedule:
-    - cron: "0 0 * * *"   # uma vez por dia (24h), às 00:00 UTC / 21:00 Brasília
-  workflow_dispatch:
+  # coleta automática desligada (site congelado em 06/10/2026).
+  # Para religar: recolocar o bloco abaixo.
+  # schedule:
+  #   - cron: "0 0 * * *"   # uma vez por dia, 00:00 UTC / 21:00 Brasília
+  workflow_dispatch:       # coleta manual: aba Actions > Run workflow
 
 permissions:
   contents: write
