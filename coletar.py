@@ -70,11 +70,55 @@ def esta_expirado(data_str):
     except Exception:
         return False
 
+#ruído: itens que não são fomento (concurso público, vestibular, lista de espera)
+# o sufixo " - Fonte" do título é ignorado, para não casar com nomes de site (ex.: "Blog do Vestibular")
+RUIDO_RE = re.compile(
+    r"concurso p[úu]blico|\bconcurso\b.{0,90}\b(edital|banca|vagas?|professor|servidores?|analistas?|nomea[çc][õo]es?|cargos?)\b"
+    r"|vestibular|lista de espera", re.I)
+
+def eh_ruido(titulo):
+    corpo = str(titulo).rsplit(" - ", 1)[0]
+    return bool(RUIDO_RE.search(corpo))
+
+UNIVERSIDADES_RE = (
+    r"\b(universidade|instituto federal|usp|unesp|unicamp|uerj|ufrj|uff|ufmg|ufpi|ufrgs|ufrrj|ufpe|ufba|ufc|ufpb|ufsc|ufpr|"
+    r"ufes|ufla|ufpa|ufam|ufma|ufrn|ufal|ufs|ufg|ufu|ufv|ufscar|unb|ifpe|ifce|ifpi|ifrj|ifsp|ifmg|ifba|ifpb|ifrn)\b")
+GOVERNOS_RE = r"prefeitura|governo do estado|governo d[eo]\b|secretaria estadual|secretaria municipal"
+
+def classificar_agencia(titulo):
+    t = str(titulo).lower()
+    if re.search(r'\b(cnpq)\b', t): return "CNPq"
+    if re.search(r'\b(capes)\b', t): return "CAPES"
+    if re.search(r'\b(faperj)\b', t): return "FAPERJ"
+    if re.search(r'\b(secti-rj|secti rj|secti)\b', t): return "SECTI-RJ"
+    if re.search(r'\b(fapesp|fapemig|fapergs|fap|fapeal|fapeam|fapeg|fapema|fapemat|fapes|fapesb|fapesc|fapespa|fapesq|fapi|fapt|funcap)\b', t): return "FAP (Estaduais)"
+    if re.search(r'\b(finep)\b', t): return "Finep"
+    if re.search(r'\b(bndes)\b', t): return "BNDES"
+    if re.search(r'\b(minc|cultura|funarte|lei paulo gustavo|lei aldir blanc|pnab|secult|aldir blanc|paulo gustavo)\b', t): return "Cultura (MinC e secretarias)"
+    if re.search(r'\b(mcti)\b', t): return "MCTI"
+    if re.search(r'\biphan\b', t): return "Iphan"
+    if re.search(r'arquivo nacional', t): return "Arquivo Nacional"
+    if re.search(r'biblioteca nacional|\bfbn\b', t): return "Fundação Biblioteca Nacional"
+    if re.search(r'\bfiocruz\b', t): return "Fiocruz"
+    if re.search(r'\bmec\b|ministério da educação', t): return "MEC"
+    if re.search(UNIVERSIDADES_RE, t): return "Universidades / IFs"
+    if re.search(GOVERNOS_RE, t): return "Governos estaduais/municipais"
+    return ""
+
+def classificar_tipo(titulo):
+    t = str(titulo).lower()
+    if re.search(r'\b(bolsa|bolsas)\b', t): return "Bolsa"
+    if re.search(r'\b(prêmio|premio)\b', t): return "Prêmio"
+    if re.search(r'\b(curso|cursos|capacitação|oficina|treinamento)\b', t): return "Curso"
+    if re.search(r'\b(fomento|financiamento|subvenção|patrocínio)\b', t): return "Financiamento"
+    return ""
+
 arquivo = "dados/noticias.csv"
 
 linhas = []
 descartadas_antigas = 0
 descartadas_fonte = 0
+descartadas_ruido = 0
 
 for eixo, keywords in EIXOS.items():
     for kw in keywords:
@@ -95,26 +139,14 @@ for eixo, keywords in EIXOS.items():
                 continue
 
             titulo = e.title or ""
-            titulo_lower = titulo.lower()
 
-            # Classificador de Agência
-            agencia = ""
-            if re.search(r'\b(cnpq)\b', titulo_lower): agencia = "CNPq"
-            elif re.search(r'\b(capes)\b', titulo_lower): agencia = "CAPES"
-            elif re.search(r'\b(faperj)\b', titulo_lower): agencia = "FAPERJ"
-            elif re.search(r'\b(secti-rj|secti rj|secti)\b', titulo_lower): agencia = "SECTI-RJ"
-            elif re.search(r'\b(fapesp|fapemig|fapergs|fap|fapeal|fapeam|fapeg|fapema|fapemat|fapes|fapesb|fapesc|fapespa|fapesq|fapi|fapt|funcap)\b', titulo_lower): agencia = "FAP (Estaduais)"
-            elif re.search(r'\b(finep)\b', titulo_lower): agencia = "Finep"
-            elif re.search(r'\b(bndes)\b', titulo_lower): agencia = "BNDES"
-            elif re.search(r'\b(minc|cultura|funarte|lei paulo gustavo|lei aldir blanc)\b', titulo_lower): agencia = "Cultura / MinC"
-            elif re.search(r'\b(mcti)\b', titulo_lower): agencia = "MCTI"
+            #filtro de ruído (concurso público, vestibular, lista de espera)
+            if eh_ruido(titulo):
+                descartadas_ruido += 1
+                continue
 
-            # Classificador de Tipo
-            tipo = ""
-            if re.search(r'\b(bolsa|bolsas)\b', titulo_lower): tipo = "Bolsa"
-            elif re.search(r'\b(prêmio|premio)\b', titulo_lower): tipo = "Prêmio"
-            elif re.search(r'\b(curso|cursos|capacitação|oficina|treinamento)\b', titulo_lower): tipo = "Curso"
-            elif re.search(r'\b(fomento|financiamento|subvenção|patrocínio)\b', titulo_lower): tipo = "Financiamento"
+            agencia = classificar_agencia(titulo)
+            tipo = classificar_tipo(titulo)
 
             linhas.append({
                 "eixo": eixo,
@@ -130,27 +162,6 @@ for eixo, keywords in EIXOS.items():
 
 novo = pd.DataFrame(linhas)
 
-def classificar_agencia(titulo):
-    t = str(titulo).lower()
-    if re.search(r'\b(cnpq)\b', t): return "CNPq"
-    if re.search(r'\b(capes)\b', t): return "CAPES"
-    if re.search(r'\b(faperj)\b', t): return "FAPERJ"
-    if re.search(r'\b(secti-rj|secti rj|secti)\b', t): return "SECTI-RJ"
-    if re.search(r'\b(fapesp|fapemig|fapergs|fap|fapeal|fapeam|fapeg|fapema|fapemat|fapes|fapesb|fapesc|fapespa|fapesq|fapi|fapt|funcap)\b', t): return "FAP (Estaduais)"
-    if re.search(r'\b(finep)\b', t): return "Finep"
-    if re.search(r'\b(bndes)\b', t): return "BNDES"
-    if re.search(r'\b(minc|cultura|funarte|lei paulo gustavo|lei aldir blanc)\b', t): return "Cultura / MinC"
-    if re.search(r'\b(mcti)\b', t): return "MCTI"
-    return ""
-
-def classificar_tipo(titulo):
-    t = str(titulo).lower()
-    if re.search(r'\b(bolsa|bolsas)\b', t): return "Bolsa"
-    if re.search(r'\b(prêmio|premio)\b', t): return "Prêmio"
-    if re.search(r'\b(curso|cursos|capacitação|oficina|treinamento)\b', t): return "Curso"
-    if re.search(r'\b(fomento|financiamento|subvenção|patrocínio)\b', t): return "Financiamento"
-    return ""
-
 if os.path.exists(arquivo):
     antigo = pd.read_csv(arquivo)
     df = pd.concat([antigo, novo]).drop_duplicates(subset="link", keep="first")
@@ -158,6 +169,11 @@ if os.path.exists(arquivo):
     # Reclassificar tudo retroativamente
     df["agencia"] = df["titulo"].apply(classificar_agencia)
     df["tipo_edital"] = df["titulo"].apply(classificar_tipo)
+
+    # remover ruído também do acervo antigo
+    ruido_antigo = df["titulo"].apply(eh_ruido)
+    descartadas_ruido += int(ruido_antigo.sum())
+    df = df[~ruido_antigo]
 
     if "data_pub" in df.columns:
         df = df[~df["data_pub"].apply(esta_expirado)]
@@ -168,4 +184,4 @@ else:
 
 os.makedirs("dados", exist_ok=True)
 df.to_csv(arquivo, index=False)
-print(f"{len(novo)} novas | {len(df)} no total | descartadas: {descartadas_antigas} antigas, {descartadas_fonte} por fonte")
+print(f"{len(novo)} novas | {len(df)} no total | descartadas: {descartadas_antigas} antigas, {descartadas_fonte} por fonte, {descartadas_ruido} por ruído")
